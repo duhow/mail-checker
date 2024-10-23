@@ -186,7 +186,7 @@ class Validator:
       return
     try:
       resolve = dns.resolver.resolve(self.domain, 'SOA')
-    except dns.resolver.NXDOMAIN:
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
 
@@ -202,7 +202,7 @@ class Validator:
         if ns in str(entry):
           self.penalty(7, f'Nameserver found, suspicious tempmail: {ns}')
           self.disposable = True
-    except dns.resolver.NXDOMAIN:
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
 
@@ -211,9 +211,13 @@ class Validator:
       return
     try:
       resolve = dns.resolver.resolve(self.domain, 'MX')
+      for rdata in resolve:
+        if len(str(rdata.exchange)) < 3:
+          self.penalty(7, 'Invalid MX record found')
+          break
     except dns.resolver.NoAnswer:
       self.penalty(10, 'Cannot send email, no MX record found for domain')
-    except dns.resolver.NXDOMAIN:
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
     return True
@@ -237,7 +241,7 @@ class Validator:
             return True
     except dns.resolver.NoAnswer:
       self.penalty(10, 'Cannot send email, no MX record found for domain')
-    except dns.resolver.NXDOMAIN:
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
 
