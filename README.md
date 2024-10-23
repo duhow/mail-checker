@@ -6,9 +6,11 @@ A small Flask application to check the email provided, return score and determin
 
 Call endpoint `GET /check?email=your@email.com` or `POST /check` with JSON `{"email": "your@email.com"}`.
 
-```json
+```sh
 curl -H  "Content-Type: application/json" --data '{"email": "my@email.com"}' localhost:5000/check
+```
 
+```json
 {
   "email": "my@email.com",
   "reasons": [],
