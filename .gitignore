@@ -2,3 +2,8 @@
 .vscode
 
 __pycache__/
+
+/*.sh
+/*.txt
+/*.tar.gz
+/*.tar
