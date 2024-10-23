@@ -3,7 +3,8 @@ import re
 import dns.resolver
 
 from .tld import tlds
-from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers, public_email_providers, domain_typos
+from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers, public_email_providers
+from .const import domain_typos, tld_typos
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -86,14 +87,6 @@ class Validator:
 
     return result
 
-  def step_0200_has_domain_typosquatting(self):
-    """ Misplaced letters that generate a different domain than the expected. """
-    for domain, typos in domain_typos.items():
-      if self.domain in typos:
-        self.penalty(11, f'Typosquatting detected: {domain}')
-        self.suggested_domain = domain
-        return False
-
   def step_0300_is_tld_allowed(self):
     """ This supports domain.co.uk but not sub.domain.co.uk """
     tld_supported = 2
@@ -106,8 +99,54 @@ class Validator:
     tld = self.domain.split('.')[-1].lower()
     result = tld in tlds
     if not result:
-      self.penalty(10, f'Invalid TLD found in email domain: {tld}')
+      self.penalty(7, f'Invalid TLD found in email domain: {tld}')
     return result
+  
+  def step_0350_has_domain_typosquatting(self):
+    """ Misplaced letters that generate a different domain than the expected. """
+
+    check = self.domain
+    parts = check.split('.', 1)
+    domain_tld = parts[-1]
+    tld_fixed = False
+
+    # remove digits from the beginning or ending of domain
+    if check[0].isdigit():
+      check = check.lstrip('0123456789')
+      tld_fixed = True
+
+    if check[-1].isdigit():
+      check = check.rstrip('0123456789')
+      tld_fixed = True
+
+    # if earlier we check TLD is invalid, we already have a low score.
+    # probably we will have a typo of COM.
+    if self.score < 2:
+      for tld, typos in tld_typos.items():
+        if domain_tld in typos:
+          # fix TLD
+          check = parts[0] + tld
+          tld_fixed = True
+          break
+
+    for domain, typos in domain_typos.items():
+      # Skip if match
+      if self.domain == domain:
+        if tld_fixed:
+          self.penalty(1, f'Typosquatting detected: {domain}')
+          self.suggested_domain = check
+          return False
+        return True
+      # NOTE: Be careful with .com.pe and other ccTLDs!
+      if self.domain.startswith(domain) and (len(self.domain) - len(domain)) > 0:
+        self.penalty(11, f'Typosquatting detected: {domain}')
+        self.suggested_domain = domain
+        return False
+      if self.domain in typos:
+        self.penalty(11, f'Typosquatting detected: {domain}')
+        self.suggested_domain = domain
+        return False
+      parts = domain.split('.', 1)
 
   def step_0400_has_valid_username(self):
     """ Check if the username part of the email is valid. """

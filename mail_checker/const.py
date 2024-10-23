@@ -1,3 +1,5 @@
+import string
+
 suspicious_tempmail_nameservers = [
   ".dnsowl.com", # temp-mail.org
 ]
@@ -87,29 +89,47 @@ public_email_providers = [
 
 typos_gmail = [
   "com.gmail",
+  "gmail.om",
   "gmail.con",
+  "gmail.coom",
+  "gomail.com",
   "gmail.cm",
   "gmsil.com",
+  "gmill.com",
+  "gmill.con",
   "gamil.ccom",
   "gmail.com.ar",
   "gimal.com",
+  "gmil.com",
   "gemal.com",
+  "gemil.com",
+  "geml.com",
   "gmaile.com",
+  "gmei.com",
   "gmeli.com",
   "gmaim.com",
   "gmamail.com",
   "gmail.coml",
   "gmail.cl",
+  "amil.com",
   "agmail.com",
+  "gamul.com",
   "fmail.com",
   "jmail.com",
   "jimail.com",
+  "igmail.com",
+  "imalg.com",
+  "imalg.con",
+  "sgmail.com",
   "hmail.com",
   "gmaii.com",
+  "gilam.com",
   "mgail.com",
   "gami.com",
   "gmqil.com",
   "gmail.co.com",
+  "gmail.com.pe",
+  "gmilcom.com",
 ]
 
 typos_hotmail = [
@@ -119,6 +139,7 @@ typos_hotmail = [
   "gotmail.com",
   "hotmaim.com",
   "hotmaip.com",
+  "hotmaul.com",
   "otmai.com",
   "hotmail.con",
   "hotmail.cm",
@@ -132,6 +153,7 @@ typos_icloud = [
   "iclouf.com",
   "iclud.com",
   "iclou.com",
+  "icoud.com",
   "iclound.com",
 ]
 
@@ -139,4 +161,18 @@ domain_typos = {
   "gmail.com": typos_gmail,
   "hotmail.com": typos_hotmail,
   "icloud.com": typos_icloud,
+}
+
+def generate_typos(word):
+  typos = [f"{word}{word}"]
+  for i, char in enumerate(word):
+    for replacement in string.ascii_lowercase:
+      if char != replacement:
+        typos.append(word[:i] + replacement + word[i+1:])
+  return typos
+
+tld_typos = {
+  "com": generate_typos("com"),
+  "net": generate_typos("net"),
+  "org": generate_typos("org"),
 }
