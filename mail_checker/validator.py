@@ -133,7 +133,7 @@ class Validator:
       # Skip if match
       if check == domain:
         if tld_fixed:
-          self.penalty(1, f'Typosquatting detected: {domain}')
+          self.penalty(11, f'Typosquatting detected: {domain}')
           self.suggested_domain = check
           return False
         return True
@@ -146,7 +146,6 @@ class Validator:
         self.penalty(11, f'Typosquatting detected: {domain}')
         self.suggested_domain = domain
         return False
-      parts = domain.split('.', 1)
 
   def step_0400_has_valid_username(self):
     """ Check if the username part of the email is valid. """
