@@ -84,3 +84,50 @@ public_email_providers = [
   "rocketmail.com",
   "ymail.com",
 ]
+
+typos_gmail = [
+  "com.gmail",
+  "gmsil.com",
+  "gamil.ccom",
+  "gmail.com.ar",
+  "gimal.com",
+  "gemal.com",
+  "gmaile.com",
+  "gmeli.com",
+  "gmaim.com",
+  "gmamail.com",
+  "gmail.coml",
+  "gmail.cl",
+  "agmail.com",
+  "fmail.com",
+  "jmail.com",
+  "jimail.com",
+  "hmail.com",
+  "gmaii.com",
+  "mgail.com",
+  "gami.com",
+  "gmqil.com",
+  "gmail.co.com",
+]
+
+typos_hotmail = [
+  "rotmail.com",
+  "votmail.com",
+  "hotmaim.com",
+  "hotmaip.com",
+  "otmai.com",
+  "xn--hotmai-1wa.com",
+]
+
+typos_icloud = [
+  "iclouf.com",
+  "iclud.com",
+  "iclou.com",
+  "iclound.com",
+]
+
+domain_typos = {
+  "gmail.com": typos_gmail,
+  "hotmail.com": typos_hotmail,
+  "icloud.com": typos_icloud,
+}

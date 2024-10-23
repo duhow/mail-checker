@@ -3,7 +3,7 @@ import re
 import dns.resolver
 
 from .tld import tlds
-from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers, public_email_providers
+from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers, public_email_providers, domain_typos
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -15,6 +15,8 @@ class Validator:
     self.reasons = list()
     self.disposable = False # temp email
     self.public_domain = False # eg. gmail.com
+    self.dns_exists = True
+    self.suggested_domain = None
 
   @property
   def dict(self):
@@ -26,6 +28,8 @@ class Validator:
       'disposable': self.disposable,
       'public_domain': self.public_domain,
     }
+    if self.suggested_domain:
+      result['did_you_mean'] = self.suggested_domain
     return result
 
   def is_valid_email(email):
@@ -81,7 +85,15 @@ class Validator:
       self.score += 1
 
     return result
-  
+
+  def step_has_domain_typosquatting(self):
+    """ Misplaced letters that generate a different domain than the expected. """
+    for domain, typos in domain_typos.items():
+      if self.domain in typos:
+        self.penalty(6, f'Typosquatting detected: {domain}')
+        self.suggested_domain = domain
+        return False
+
   def step_is_tld_allowed(self):
     """ This supports domain.co.uk but not sub.domain.co.uk """
     tld_supported = 2
@@ -106,7 +118,7 @@ class Validator:
     if len(self.username) <= 1:
       self.penalty(1, 'Username too short')
     return result
-  
+
   def step_is_not_robot_or_waste_bin(self):
     unwanted_usernames = [
       'no-reply', 'noreply', 'donotreply', 'do-not-reply',
@@ -130,18 +142,19 @@ class Validator:
     if not result:
       self.penalty(10, 'Email is empty')
     return result
-  
+
   def step_domain_resolve_soa(self):
-    if self.public_domain:
+    if self.public_domain or not self.dns_exists:
       return
     try:
       resolve = dns.resolver.resolve(self.domain, 'SOA')
     except dns.resolver.NXDOMAIN:
       self.penalty(10, 'Domain does not exist')
+      self.dns_exists = False
 
   def step_domain_resolve_suspicious_tempmail_nameservers(self):
     """ This can be used to check if the domain is using a suspicious tempmail nameserver. """
-    if self.public_domain:
+    if self.public_domain or not self.dns_exists:
       return
     try:
       resolve = dns.resolver.resolve(self.domain, 'SOA')
@@ -153,9 +166,10 @@ class Validator:
           self.disposable = True
     except dns.resolver.NXDOMAIN:
       self.penalty(10, 'Domain does not exist')
+      self.dns_exists = False
 
   def step_domain_resolve_mx(self):
-    if self.public_domain:
+    if self.public_domain or not self.dns_exists:
       return
     try:
       resolve = dns.resolver.resolve(self.domain, 'MX')
@@ -163,11 +177,12 @@ class Validator:
       self.penalty(10, 'Cannot send email, no MX record found for domain')
     except dns.resolver.NXDOMAIN:
       self.penalty(10, 'Domain does not exist')
+      self.dns_exists = False
     return True
-  
+
   def step_domain_check_mx_tempmail(self):
     """ Check if MX belongs to known tempmail providers. """
-    if self.public_domain:
+    if self.public_domain or not self.dns_exists:
       return
     try:
       resolve = dns.resolver.resolve(self.domain, 'MX')
@@ -186,9 +201,11 @@ class Validator:
       self.penalty(10, 'Cannot send email, no MX record found for domain')
     except dns.resolver.NXDOMAIN:
       self.penalty(10, 'Domain does not exist')
+      self.dns_exists = False
 
   def run(self):
     steps = [func for func in dir(self) if callable(getattr(self, func)) and func.startswith('step_')]
+    self.step_has_domain_typosquatting()
     for step in steps:
       logger.debug(f'Running {step.lstrip("step_").replace("_", " ")}')
       getattr(self, step)()
