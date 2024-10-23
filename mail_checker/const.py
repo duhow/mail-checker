@@ -87,6 +87,8 @@ public_email_providers = [
 
 typos_gmail = [
   "com.gmail",
+  "gmail.con",
+  "gmail.cm",
   "gmsil.com",
   "gamil.ccom",
   "gmail.com.ar",
@@ -113,13 +115,20 @@ typos_gmail = [
 typos_hotmail = [
   "rotmail.com",
   "votmail.com",
+  "jotmail.com",
+  "gotmail.com",
   "hotmaim.com",
   "hotmaip.com",
   "otmai.com",
+  "hotmail.con",
+  "hotmail.cm",
   "xn--hotmai-1wa.com",
 ]
 
 typos_icloud = [
+  "icloud.con",
+  "icloud.cm",
+  "jcloud.com",
   "iclouf.com",
   "iclud.com",
   "iclou.com",

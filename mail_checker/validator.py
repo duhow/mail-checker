@@ -50,18 +50,18 @@ class Validator:
     self.reasons.append(reason)
     return False
 
-  def step_has_at_symbol(self):
+  def step_0100_has_at_symbol(self):
     result = '@' in self.email
     if not result:
       self.penalty(10, 'No @ symbol found in email')
 
-  def step_has_only_one_at_symbol(self):
+  def step_0101_has_only_one_at_symbol(self):
     result = self.email.count('@') == 1
     if not result:
       self.penalty(10, 'Multiple @ symbols found in email')
     return result
 
-  def step_has_valid_domain(self):
+  def step_0102_has_valid_domain(self):
     """ By default, we expect the domain to have at least 1 TLD. """
     domain = self.domain
     result = '.' in domain and len(domain.split('.')) > 1
@@ -86,22 +86,22 @@ class Validator:
 
     return result
 
-  def step_has_domain_typosquatting(self):
+  def step_0200_has_domain_typosquatting(self):
     """ Misplaced letters that generate a different domain than the expected. """
     for domain, typos in domain_typos.items():
       if self.domain in typos:
-        self.penalty(6, f'Typosquatting detected: {domain}')
+        self.penalty(11, f'Typosquatting detected: {domain}')
         self.suggested_domain = domain
         return False
 
-  def step_is_tld_allowed(self):
+  def step_0300_is_tld_allowed(self):
     """ This supports domain.co.uk but not sub.domain.co.uk """
     tld_supported = 2
     result = len(self.domain.split('.')) - 1 > tld_supported
     if result:
       self.penalty(1, f'More than {tld_supported} subdomain found in email domain')
 
-  def step_is_tld_valid(self):
+  def step_0301_is_tld_valid(self):
     """ Check if the TLD is valid. """
     tld = self.domain.split('.')[-1].lower()
     result = tld in tlds
@@ -109,7 +109,7 @@ class Validator:
       self.penalty(10, f'Invalid TLD found in email domain: {tld}')
     return result
 
-  def step_has_valid_username(self):
+  def step_0400_has_valid_username(self):
     """ Check if the username part of the email is valid. """
     regex = r'^[A-Za-z0-9._%+-]+$'
     result = re.match(regex, self.username) is not None
@@ -119,7 +119,7 @@ class Validator:
       self.penalty(1, 'Username too short')
     return result
 
-  def step_is_not_robot_or_waste_bin(self):
+  def step_0401_is_not_robot_or_waste_bin(self):
     unwanted_usernames = [
       'no-reply', 'noreply', 'donotreply', 'do-not-reply',
       'help', 'postmaster', 'webmaster', 'hostmaster', 'abuse',
@@ -130,20 +130,20 @@ class Validator:
       self.penalty(2, 'Email username is a robot name')
     return result
 
-  def step_username_is_not_alias_box(self):
+  def step_0402_username_is_not_alias_box(self):
     """ You can create multiple emails with email+alias@gmail.com """
     result = '+' not in self.username
     if not result:
       self.penalty(1, 'Email username has an alias')
     return result
 
-  def step_is_not_empty(self):
+  def step_0000_is_not_empty(self):
     result = bool(self.email.strip())
     if not result:
       self.penalty(10, 'Email is empty')
     return result
 
-  def step_domain_resolve_soa(self):
+  def step_1000_domain_resolve_soa(self):
     if self.public_domain or not self.dns_exists:
       return
     try:
@@ -152,7 +152,7 @@ class Validator:
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
 
-  def step_domain_resolve_suspicious_tempmail_nameservers(self):
+  def step_1001_domain_resolve_suspicious_tempmail_nameservers(self):
     """ This can be used to check if the domain is using a suspicious tempmail nameserver. """
     if self.public_domain or not self.dns_exists:
       return
@@ -168,7 +168,7 @@ class Validator:
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
 
-  def step_domain_resolve_mx(self):
+  def step_1100_domain_resolve_mx(self):
     if self.public_domain or not self.dns_exists:
       return
     try:
@@ -180,7 +180,7 @@ class Validator:
       self.dns_exists = False
     return True
 
-  def step_domain_check_mx_tempmail(self):
+  def step_1101_domain_check_mx_tempmail(self):
     """ Check if MX belongs to known tempmail providers. """
     if self.public_domain or not self.dns_exists:
       return
@@ -205,7 +205,6 @@ class Validator:
 
   def run(self):
     steps = [func for func in dir(self) if callable(getattr(self, func)) and func.startswith('step_')]
-    self.step_has_domain_typosquatting()
     for step in steps:
       logger.debug(f'Running {step.lstrip("step_").replace("_", " ")}')
       getattr(self, step)()
