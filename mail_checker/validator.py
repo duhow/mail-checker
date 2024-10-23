@@ -131,18 +131,18 @@ class Validator:
 
     for domain, typos in domain_typos.items():
       # Skip if match
-      if self.domain == domain:
+      if check == domain:
         if tld_fixed:
           self.penalty(1, f'Typosquatting detected: {domain}')
           self.suggested_domain = check
           return False
         return True
       # NOTE: Be careful with .com.pe and other ccTLDs!
-      if self.domain.startswith(domain) and (len(self.domain) - len(domain)) > 0:
+      if check.startswith(domain) and (len(check) - len(domain)) > 0:
         self.penalty(11, f'Typosquatting detected: {domain}')
         self.suggested_domain = domain
         return False
-      if self.domain in typos:
+      if check in typos:
         self.penalty(11, f'Typosquatting detected: {domain}')
         self.suggested_domain = domain
         return False
