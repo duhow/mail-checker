@@ -106,6 +106,7 @@ typos_gmail = [
   "gmail.com.br", # !
   "gamil.com.br",
   "gmailcom.br",
+  "gmal.com.br",
   "gamial.com",
   "gmilcom.com",
   "gmael.com",
@@ -116,6 +117,8 @@ typos_gmail = [
   "geml.com",
   "gmaile.com",
   "gqmil.com",
+  "gmaio.com",
+  "gmeil.com",
   "gmei.com",
   "gmeli.com",
   "gmaim.com",
@@ -187,19 +190,21 @@ typos_icloud = [
   "iclou.com",
   "icoud.com",
   "icluod.com",
+  "ivloud.com"
   "iclound.com",
   "i.cloud.com",
 ]
 
 typos_yahoo = [
   "uahoo.com",
-
+  "hahoo.com",
 ]
 
 domain_typos = {
   "gmail.com": typos_gmail,
   "hotmail.com": typos_hotmail,
   "icloud.com": typos_icloud,
+  "yahoo.com": typos_yahoo,
 }
 
 def generate_typos(word):
