@@ -2,6 +2,7 @@
 
 from flask import Flask, request, jsonify
 from mail_checker.validator import Validator
+import os
 
 app = Flask(__name__)
 
@@ -44,4 +45,5 @@ def check_email():
   return jsonify(validator.dict)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    debug_mode = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't', 'y', 'yes']
+    app.run(host='0.0.0.0', debug=debug_mode)
