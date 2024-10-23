@@ -1,7 +1,9 @@
 import logging
 import re
+import dns.resolver
 
 from .tld import tlds
+from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -11,6 +13,7 @@ class Validator:
     self.email = email
     self.score = 8
     self.reasons = list()
+    self.disposable = False # temp email
 
   @property
   def dict(self):
@@ -19,9 +22,8 @@ class Validator:
       'valid': self.score >= 5,
       'score': self.score,
       'reasons': self.reasons,
+      'disposable': self.disposable,
     }
-    # if self.reasons:
-    #  result['reasons'] = self.reasons
     return result
 
   def is_valid_email(email):
@@ -122,6 +124,54 @@ class Validator:
     if not result:
       self.penalty(10, 'Email is empty')
     return result
+  
+  def step_domain_resolve_soa(self):
+    try:
+      resolve = dns.resolver.resolve(self.domain, 'SOA')
+    except dns.resolver.NXDOMAIN:
+      self.penalty(10, 'Domain does not exist')
+
+  def step_domain_resolve_suspicious_tempmail_nameservers(self):
+    """ This can be used to check if the domain is using a suspicious tempmail nameserver. """
+    try:
+      resolve = dns.resolver.resolve(self.domain, 'SOA')
+      entry = resolve.response.answer[0]
+
+      for ns in suspicious_tempmail_nameservers:
+        if ns in str(entry):
+          self.penalty(7, f'Nameserver found, suspicious tempmail: {ns}')
+          self.disposable = True
+    except dns.resolver.NXDOMAIN:
+      self.penalty(10, 'Domain does not exist')
+
+  def step_domain_resolve_mx(self):
+    try:
+      resolve = dns.resolver.resolve(self.domain, 'MX')
+    except dns.resolver.NoAnswer:
+      self.penalty(10, 'Cannot send email, no MX record found for domain')
+    except dns.resolver.NXDOMAIN:
+      self.penalty(10, 'Domain does not exist')
+    return True
+  
+  def step_domain_check_mx_tempmail(self):
+    """ Check if MX belongs to known tempmail providers. """
+    try:
+      resolve = dns.resolver.resolve(self.domain, 'MX')
+      for rdata in resolve:
+        for tempmail_mx in tempmail_mx_servers:
+          if tempmail_mx in str(rdata.exchange):
+            self.penalty(7, f'Tempmail MX found: {tempmail_mx}')
+            self.disposable = True
+            return False
+        for trusted_mx in trusted_mx_servers:
+          if trusted_mx in str(rdata.exchange):
+            self.score += 2
+            # just one bump increase
+            return True
+    except dns.resolver.NoAnswer:
+      self.penalty(10, 'Cannot send email, no MX record found for domain')
+    except dns.resolver.NXDOMAIN:
+      self.penalty(10, 'Domain does not exist')
 
   def run(self):
     steps = [func for func in dir(self) if callable(getattr(self, func)) and func.startswith('step_')]
