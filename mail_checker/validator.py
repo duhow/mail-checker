@@ -3,7 +3,7 @@ import re
 import dns.resolver
 
 from .tld import tlds
-from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers
+from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers, public_email_providers
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -14,6 +14,7 @@ class Validator:
     self.score = 8
     self.reasons = list()
     self.disposable = False # temp email
+    self.public_domain = False # eg. gmail.com
 
   @property
   def dict(self):
@@ -23,6 +24,7 @@ class Validator:
       'score': self.score,
       'reasons': self.reasons,
       'disposable': self.disposable,
+      'public_domain': self.public_domain,
     }
     return result
 
@@ -73,6 +75,10 @@ class Validator:
       self.penalty(10, 'Invalid domain length')
     if result and domain.startswith("-") or domain.split('.')[0].endswith("-"):
       self.penalty(5, 'Invalid domain character')
+
+    if domain in public_email_providers:
+      self.public_domain = True
+      self.score += 1
 
     return result
   
@@ -126,6 +132,8 @@ class Validator:
     return result
   
   def step_domain_resolve_soa(self):
+    if self.public_domain:
+      return
     try:
       resolve = dns.resolver.resolve(self.domain, 'SOA')
     except dns.resolver.NXDOMAIN:
@@ -133,6 +141,8 @@ class Validator:
 
   def step_domain_resolve_suspicious_tempmail_nameservers(self):
     """ This can be used to check if the domain is using a suspicious tempmail nameserver. """
+    if self.public_domain:
+      return
     try:
       resolve = dns.resolver.resolve(self.domain, 'SOA')
       entry = resolve.response.answer[0]
@@ -145,6 +155,8 @@ class Validator:
       self.penalty(10, 'Domain does not exist')
 
   def step_domain_resolve_mx(self):
+    if self.public_domain:
+      return
     try:
       resolve = dns.resolver.resolve(self.domain, 'MX')
     except dns.resolver.NoAnswer:
@@ -155,6 +167,8 @@ class Validator:
   
   def step_domain_check_mx_tempmail(self):
     """ Check if MX belongs to known tempmail providers. """
+    if self.public_domain:
+      return
     try:
       resolve = dns.resolver.resolve(self.domain, 'MX')
       for rdata in resolve:
