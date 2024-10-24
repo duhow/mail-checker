@@ -100,6 +100,8 @@ class Validator:
     result = tld in tlds
     if not result:
       self.penalty(7, f'Invalid TLD found in email domain: {tld}')
+      if tld.startswith('co') and len(tld) == 3:
+        self.suggested_domain = f"{self.domain.split('.')[0]}.com"
       self.dns_exists = False
     return result
   
