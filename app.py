@@ -4,6 +4,8 @@ from flask import Flask, request, jsonify
 from mail_checker.validator import Validator
 from mail_checker.const import debug_mode
 import logging
+import argparse
+import json
 
 app = Flask(__name__)
 
@@ -47,5 +49,20 @@ def check_email():
 
   return jsonify(validator.dict)
 
-if __name__ == '__main__':
+def main():
+  parser = argparse.ArgumentParser(description='Mail Checker')
+  parser.add_argument('input', nargs='?', help='Email to validate or run the server')
+  args = parser.parse_args()
+
+  if args.input and '@' in args.input:
+    validate_email(args.input)
+  else:
     app.run(host='0.0.0.0', debug=debug_mode)
+
+def validate_email(email):
+  validator = Validator(email)
+  validator.run()
+  print(json.dumps(validator.dict))
+
+if __name__ == '__main__':
+  main()
