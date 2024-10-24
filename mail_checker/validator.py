@@ -144,7 +144,10 @@ class Validator:
           return True
 
       # xgmail.com
-      elif check.endswith(domain) and (len(check) - len(domain)) <= 2:
+      elif (
+        check.endswith(domain) and (len(check) - len(domain)) <= 2
+        and check not in public_email_providers # EXCEPTION: myyahoo.com
+      ):
         self.logger.debug(f"Match with prefix in domain name: {self.domain} - {domain}")
         is_invalid = True
       elif check.startswith(domain.split('.')[0]) and domain.endswith(f".{domain_tld}") and (len(check) - len(domain)) <= 2:
