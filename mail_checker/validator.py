@@ -100,6 +100,7 @@ class Validator:
     result = tld in tlds
     if not result:
       self.penalty(7, f'Invalid TLD found in email domain: {tld}')
+      self.dns_exists = False
     return result
   
   def step_0350_has_domain_typosquatting(self):
@@ -125,7 +126,7 @@ class Validator:
       for tld, typos in tld_typos.items():
         if domain_tld in typos:
           # fix TLD
-          check = parts[0] + tld
+          check = ".".join([parts[0], tld])
           tld_fixed = True
           break
 
