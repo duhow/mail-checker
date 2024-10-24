@@ -2,9 +2,12 @@
 
 from flask import Flask, request, jsonify
 from mail_checker.validator import Validator
-import os
+from mail_checker.const import debug_mode
+import logging
 
 app = Flask(__name__)
+
+app.logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
 
 checks_done = 0
 
@@ -45,5 +48,4 @@ def check_email():
   return jsonify(validator.dict)
 
 if __name__ == '__main__':
-    debug_mode = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't', 'y', 'yes']
     app.run(host='0.0.0.0', debug=debug_mode)

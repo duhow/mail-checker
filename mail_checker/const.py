@@ -1,4 +1,7 @@
 import string
+import os
+
+debug_mode = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't', 'y', 'yes']
 
 suspicious_tempmail_nameservers = [
   ".dnsowl.com", # temp-mail.org

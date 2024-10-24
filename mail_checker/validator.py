@@ -5,9 +5,9 @@ import dns.resolver
 from .tld import tlds
 from .const import suspicious_tempmail_nameservers, trusted_mx_servers, tempmail_mx_servers, public_email_providers
 from .const import domain_typos, tld_typos
+from .const import debug_mode
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG if debug_mode else logging.INFO)
 
 class Validator:
   def __init__(self, email: str):
@@ -18,6 +18,7 @@ class Validator:
     self.public_domain = False # eg. gmail.com
     self.dns_exists = True
     self.suggested_domain = None
+    self.logger = logging.getLogger(__name__)
 
   @property
   def dict(self):
@@ -104,7 +105,7 @@ class Validator:
         self.suggested_domain = f"{self.domain.split('.')[0]}.com"
       self.dns_exists = False
     return result
-  
+
   def step_0350_has_domain_typosquatting(self):
     """ Misplaced letters that generate a different domain than the expected. """
 
@@ -112,6 +113,7 @@ class Validator:
     parts = check.split('.', 1)
     domain_tld = parts[-1]
     tld_fixed = False
+    is_invalid = False
 
     # remove digits from the beginning or ending of domain
     if check[0].isdigit():
@@ -136,16 +138,27 @@ class Validator:
       # Skip if match
       if check == domain:
         if tld_fixed:
-          self.penalty(11, f'Typosquatting detected: {domain}')
-          self.suggested_domain = check
-          return False
-        return True
+          self.logger.debug(f"Match wrong TLD: {self.domain} - {domain}")
+          is_invalid = True
+        else:
+          return True
+
+      # xgmail.com
+      elif check.endswith(domain) and (len(check) - len(domain)) <= 2:
+        self.logger.debug(f"Match with prefix in domain name: {self.domain} - {domain}")
+        is_invalid = True
+      elif check.startswith(domain.split('.')[0]) and domain.endswith(f".{domain_tld}") and (len(check) - len(domain)) <= 2:
+        self.logger.debug(f"Match with suffix in domain name: {self.domain} - {domain}")
+        is_invalid = True
       # NOTE: Be careful with .com.pe and other ccTLDs!
-      if check.startswith(domain) and (len(check) - len(domain)) > 0:
-        self.penalty(11, f'Typosquatting detected: {domain}')
-        self.suggested_domain = domain
-        return False
-      if check in typos:
+      elif check.startswith(domain) and (len(check) - len(domain)) > 0:
+        self.logger.debug(f"Match with suffix in full TLD: {self.domain} - {domain}")
+        is_invalid = True
+      elif check in typos:
+        self.logger.debug(f"Typo found in: {check} - {domain}")
+        is_invalid = True
+
+      if is_invalid:
         self.penalty(11, f'Typosquatting detected: {domain}')
         self.suggested_domain = domain
         return False
@@ -251,7 +264,7 @@ class Validator:
   def run(self):
     steps = [func for func in dir(self) if callable(getattr(self, func)) and func.startswith('step_')]
     for step in steps:
-      logger.debug(f'Running {step.lstrip("step_").replace("_", " ")}')
+      self.logger.debug(f'Running {step.lstrip("step_").replace("_", " ")}')
       getattr(self, step)()
       if self.score < 0:
         return False
