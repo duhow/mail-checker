@@ -205,6 +205,8 @@ class Validator:
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
+    except (dns.resolver.LifetimeTimeout):
+      self.penalty(8, 'Timeout while checking nameservers')
 
   def step_1001_domain_resolve_suspicious_tempmail_nameservers(self):
     """ This can be used to check if the domain is using a suspicious tempmail nameserver. """
@@ -221,6 +223,8 @@ class Validator:
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
+    except (dns.resolver.LifetimeTimeout):
+      self.penalty(8, 'Timeout while checking nameservers')
 
   def step_1100_domain_resolve_mx(self):
     if self.public_domain or not self.dns_exists:
@@ -236,6 +240,8 @@ class Validator:
     except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
+    except (dns.resolver.LifetimeTimeout):
+      self.penalty(8, 'Timeout while checking nameservers')
     return True
 
   def step_1101_domain_check_mx_tempmail(self):
@@ -252,6 +258,7 @@ class Validator:
             return False
         for trusted_mx in trusted_mx_servers:
           if trusted_mx in str(rdata.exchange):
+            self.logger.debug(f"Mail in trusted MX: {trusted_mx}")
             self.score += 2
             # just one bump increase
             return True
@@ -260,6 +267,8 @@ class Validator:
     except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
       self.penalty(10, 'Domain does not exist')
       self.dns_exists = False
+    except (dns.resolver.LifetimeTimeout):
+      self.penalty(8, 'Timeout while checking nameservers')
 
   def run(self):
     steps = [func for func in dir(self) if callable(getattr(self, func)) and func.startswith('step_')]
