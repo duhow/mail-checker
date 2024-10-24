@@ -67,6 +67,8 @@ tempmail_mx_servers = [
   "mail.h-email.net",
   "mxa.mailgun.org",
   "mxb.mailgun.org",
+  "mx.sendgrid.net",
+  ".localhost",
 ]
 
 public_email_providers = [
@@ -312,7 +314,7 @@ typos_gmail = [
   "guimei.com",
   "guimaill.com",
   "hemail.com",
-  "hmail.com",
+  "hmail.com", # MX localhost
   "iemil.com",
   "igmail.com",
   "igmil.com",
