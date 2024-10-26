@@ -273,6 +273,31 @@ class Validator:
     except (dns.resolver.LifetimeTimeout):
       self.penalty(8, 'Timeout while checking nameservers')
 
+  def step_1200_check_spf(self):
+    """ Check SPF record of the email domain and check if there are includes or more entries defined. """
+    if self.public_domain or not self.dns_exists:
+      return
+    try:
+      resolve = dns.resolver.resolve(self.domain, 'TXT')
+      spf_record_found = False
+      for rdata in resolve:
+        txt = str(rdata).replace('"', '')
+        if txt.startswith('v=spf1 '):
+          spf_record_found = True
+          entries = any(keyword in txt for keyword in ["ip4:", " a ", " mx ", "include:"])
+          if not entries and txt.endswith('-all'):
+            self.penalty(2, 'SPF record is restricted')
+          break
+      if not spf_record_found:
+        self.penalty(1, 'No SPF record found for domain')
+    except dns.resolver.NoAnswer:
+      self.penalty(1, 'No TXT record found for domain')
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers):
+      self.penalty(10, 'Domain does not exist')
+      self.dns_exists = False
+    except (dns.resolver.LifetimeTimeout):
+      self.penalty(8, 'Timeout while checking nameservers')
+
   def run(self):
     steps = [func for func in dir(self) if callable(getattr(self, func)) and func.startswith('step_')]
     for step in steps:
